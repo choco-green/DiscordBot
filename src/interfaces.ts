@@ -3,6 +3,7 @@ import { TextChannel, VoiceChannel, VoiceConnection } from "discord.js";
 export interface Song {
     title: string;
     url: string;
+    thumbnail: string;
 }
 
 export interface ServerQueue {
@@ -12,6 +13,7 @@ export interface ServerQueue {
     songs: [{
         title: string;
         url: string;
+        thumbnail: string;
     }]; // list of songs
     volume: number;
     playing: boolean;

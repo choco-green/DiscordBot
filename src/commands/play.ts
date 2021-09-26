@@ -48,11 +48,12 @@ async function getVideo(messageContent: string, message: Message, serverQueue: S
             // TODO: can add more things such as who the song is added by, or thumbnail, or more
             serverQueue.songs.push({
                 title: video.title,
-                url: `https://www.youtube.com/watch?v=${video.id}`
+                url: `https://www.youtube.com/watch?v=${video.id}`,
+                thumbnail: video.thumbnail.url
             });
 
             if (!isPlaylist)
-                return message.channel.send(`${video.title} has been added to the queue!`);
+                message.channel.send(`${video.title} has been added to the queue!`);
 
             // Try to join user's VC
             if (!serverQueue.connection) {
@@ -77,7 +78,8 @@ async function getPlaylistVideo(link: string, message: Message, serverQueue: Ser
             playlist.videos.forEach(video => {
                 serverQueue.songs.push({
                     title: video.title,
-                    url: `https://www.youtube.com/watch?v=${video.id}`
+                    url: `https://www.youtube.com/watch?v=${video.id}`,
+                    thumbnail: video.thumbnail.url
                 });
                 console.log("added");
             });
@@ -113,5 +115,5 @@ function playSong(message: Message, song: Song, serverQueue: ServerQueue) {
             playSong(message, serverQueue.songs[0], serverQueue);
         });
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-    serverQueue.textChannel.send(`Start playing: **${song.title}**`);
+    serverQueue.textChannel.send(`Start playing: **${song.title}**`, { files: [serverQueue.songs[0].thumbnail] });
 }

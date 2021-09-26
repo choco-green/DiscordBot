@@ -102,6 +102,15 @@ async function getPlaylistVideo(link: string, message: Message, serverQueue: Ser
 }
 
 export function playSong(message: Message, song: Song, serverQueue: ServerQueue, overallQueue: Map<string, ServerQueue>) {
+    /**
+     * Plays a given song
+     *
+     * @param message - The message user have sent
+     * @param song - The song that gets played
+     * @param serverQueue - The list of songs in a given guild
+     * @param overallQueue - The list of songs accross all guilds
+     *
+     */
     if (!song) {
         serverQueue.voiceChannel.leave();
         overallQueue.delete(message.guild.id);

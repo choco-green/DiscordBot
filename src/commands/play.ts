@@ -3,10 +3,10 @@ import YouTube from "youtube-sr";
 import { ServerQueue, Song } from "../interfaces";
 import ytdl = require("ytdl-core");
 
-const queue = new Map();
 const spotifyRegex = new RegExp(/^(?:https:\/\/open\.spotify\.com|spotify)([\/:])user\1([^\/]+)\1playlist\1([a-z0-9]+)/);
+// ! Discord event cheat sheet here: https://gist.github.com/koad/316b265a91d933fd1b62dddfcc3ff584
 
-export async function play(message: Message, serverQueue: ServerQueue) {
+export async function play(message: Message, serverQueue: ServerQueue, OverallQueue: Map<string, ServerQueue>) {
 
     // Splices message to remove the ({prefix}play )
     const messageContent = message.content.slice(6);
@@ -20,29 +20,29 @@ export async function play(message: Message, serverQueue: ServerQueue) {
 
     if (YouTube.validate(messageContent, "VIDEO") && !messageContent.includes("list")) {
         // Accessing API
-        getVideo(messageContent, message, serverQueue);
+        getVideo(messageContent, message, serverQueue, OverallQueue);
 
     } else if (YouTube.validate(messageContent, "VIDEO_ID") && !messageContent.includes("list")) {
         // Accessing API with concat string
-        getVideo(`https://www.youtube.com/watch?v=${messageContent}`, message, serverQueue);
+        getVideo(`https://www.youtube.com/watch?v=${messageContent}`, message, serverQueue, OverallQueue);
 
     } else if (YouTube.validate(messageContent, "PLAYLIST")) {
         // Accessing API for each video in playlist
-        getPlaylistVideo(messageContent, message, serverQueue);
+        getPlaylistVideo(messageContent, message, serverQueue, OverallQueue);
 
     } else if (YouTube.validate(messageContent, "PLAYLIST_ID")) {
         // Accessing API for each video in playlist with concat string
-        getPlaylistVideo(`https://www.youtube.com/playlist?list=${messageContent}`, message, serverQueue);
+        getPlaylistVideo(`https://www.youtube.com/playlist?list=${messageContent}`, message, serverQueue, OverallQueue);
 
     } else if (spotifyRegex.test(messageContent)) {
         // Calls spotify API
 
     } else {
-        YouTube.searchOne(messageContent).then(video => getVideo(`https://www.youtube.com/watch?v=${video.id}`, message, serverQueue));
+        YouTube.searchOne(messageContent).then(video => getVideo(`https://www.youtube.com/watch?v=${video.id}`, message, serverQueue, OverallQueue));
     }
 }
 
-async function getVideo(messageContent: string, message: Message, serverQueue: ServerQueue, isPlaylist: boolean = false) {
+async function getVideo(messageContent: string, message: Message, serverQueue: ServerQueue, overallQueue: Map<string, ServerQueue>) {
     await YouTube.getVideo(messageContent)
         .then(async video => {
             // TODO: can add more things such as who the song is added by, or thumbnail, or more
@@ -52,18 +52,18 @@ async function getVideo(messageContent: string, message: Message, serverQueue: S
                 thumbnail: video.thumbnail.url
             });
 
-            if (!isPlaylist)
-                message.channel.send(`${video.title} has been added to the queue!`);
+            if (serverQueue.connection)
+                message.channel.send(`${video.title} has been added to the queue!`, { files: [video.thumbnail.url] });
 
             // Try to join user's VC
             if (!serverQueue.connection) {
                 try {
                     const connection = await message.member.voice.channel.join();
                     serverQueue.connection = connection;
-                    playSong(message, serverQueue.songs[0], serverQueue);
+                    playSong(message, serverQueue.songs[0], serverQueue, overallQueue);
                 } catch (err) {
                     console.log(err);
-                    queue.delete(message.guild.id);
+                    overallQueue.delete(message.guild.id);
                     return message.channel.send(err);
                 }
             }
@@ -71,7 +71,7 @@ async function getVideo(messageContent: string, message: Message, serverQueue: S
         .catch(err => console.error(err));
 }
 
-async function getPlaylistVideo(link: string, message: Message, serverQueue: ServerQueue) {
+async function getPlaylistVideo(link: string, message: Message, serverQueue: ServerQueue, overallQueue: Map<string, ServerQueue>) {
     YouTube.getPlaylist(link)
         .then(playlist => playlist.fetch()) // fetch of 100 videos at one time
         .then(playlist => {
@@ -90,10 +90,10 @@ async function getPlaylistVideo(link: string, message: Message, serverQueue: Ser
                 try {
                     const connection = await message.member.voice.channel.join();
                     serverQueue.connection = connection;
-                    playSong(message, serverQueue.songs[0], serverQueue);
+                    playSong(message, serverQueue.songs[0], serverQueue, overallQueue);
                 } catch (err) {
                     console.log(err);
-                    queue.delete(message.guild.id);
+                    overallQueue.delete(message.guild.id);
                     return message.channel.send(err);
                 }
             }
@@ -101,10 +101,10 @@ async function getPlaylistVideo(link: string, message: Message, serverQueue: Ser
         .catch(console.error);
 }
 
-function playSong(message: Message, song: Song, serverQueue: ServerQueue) {
+export function playSong(message: Message, song: Song, serverQueue: ServerQueue, overallQueue: Map<string, ServerQueue>) {
     if (!song) {
         serverQueue.voiceChannel.leave();
-        queue.delete(message.guild.id);
+        overallQueue.delete(message.guild.id);
         return;
     }
 
@@ -112,8 +112,8 @@ function playSong(message: Message, song: Song, serverQueue: ServerQueue) {
         .play(ytdl(song.url))
         .on("finish", () => {
             serverQueue.songs.shift();
-            playSong(message, serverQueue.songs[0], serverQueue);
+            playSong(message, serverQueue.songs[0], serverQueue, overallQueue);
         });
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-    serverQueue.textChannel.send(`Start playing: **${song.title}**`, { files: [serverQueue.songs[0].thumbnail] });
+    serverQueue.textChannel.send(`Start playing: **${song.title}**`, { files: [song.thumbnail] });
 }

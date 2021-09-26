@@ -5,6 +5,7 @@ export interface Song {
 
 export interface ServerQueue {
     songs: {
-        [key: number]: Song
+        title: string;
+        url: string;
     }[];
 }

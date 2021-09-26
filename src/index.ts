@@ -1,11 +1,8 @@
 import { Client } from "@typeit/discord";
-import { Guild, Message } from "discord.js";
-import ytdl = require("ytdl-core");
+import { Message } from "discord.js";
 import { prefix, TOKEN } from "../config";
-import YouTube from "youtube-sr";
-import { Url } from "url";
-import { Song, ServerQueue } from "./interfaces";
-import { play } from "./commands/play";
+import { play, skip, stop } from "./commands/commands";
+import { ServerQueue } from "./interfaces";
 
 const client = new Client();
 const queue = new Map();
@@ -16,50 +13,39 @@ client.once("ready", () => {
 });
 
 client.on("message", async message => {
-
     if (message.author.bot) return;
-
     if (!message.content.startsWith(prefix)) return;
 
-    const serverQueue = queue.get(message.guild.id);
+    const serverQueue = init(message);
 
     if (message.content.startsWith(`${prefix}play`)) {
         play(message, serverQueue);
         return;
-    }
-    // else if (message.content.startsWith(`${prefix}skip`)) {
-    //     skip(message, serverQueue);
-    //     return;
-    // } else if (message.content.startsWith(`${prefix}stop`)) {
-    //     stop(message, serverQueue);
-    //     return;
-    // }
-    else {
+    } else if (message.content.startsWith(`${prefix}skip`)) {
+        skip(message, serverQueue);
+        return;
+    } else if (message.content.startsWith(`${prefix}stop`)) {
+        stop(message, serverQueue);
+        return;
+    } else {
         message.channel.send("You need to enter a valid command!");
     }
 });
 
-// function skip(message: Message, serverQueue: { connection: { dispatcher: { end: () => void; }; }; }) {
-//     if (!message.member.voice.channel)
-//         return message.channel.send(
-//             "You have to be in a voice channel to stop the music!"
-//         );
-//     if (!serverQueue)
-//         return message.channel.send("There is no song that I could skip!");
-//     serverQueue.connection.dispatcher.end();
-// }
-
-// function stop(message: Message, serverQueue: { songs: any[]; connection: { dispatcher: { end: () => void; }; }; }) {
-//     if (!message.member.voice.channel)
-//         return message.channel.send(
-//             "You have to be in a voice channel to stop the music!"
-//         );
-
-//     if (!serverQueue)
-//         return message.channel.send("There is no song that I could stop!");
-
-//     serverQueue.songs = [];
-//     serverQueue.connection.dispatcher.end();
-// }
-
 client.login(TOKEN);
+
+function init(message: Message) {
+    const serverQueue: ServerQueue = queue.get(message.guild.id);
+    if (!serverQueue) {
+        const queueConstruct = {
+            textChannel: message.channel, // channel of which the user typed the message in
+            voiceChannel: message.member.voice.channel, // voice channel which user is in while sending the message
+            connection: null, // connection status of the bot
+            songs: [], // list of songs
+            volume: 2, // todo: need to figure this shit out
+            playing: true // default
+        };
+        queue.set(message.guild.id, queueConstruct);
+    }
+    return queue.get(message.guild.id);
+}

@@ -1,5 +1,5 @@
-import { Guild, Message } from "discord.js";
-import YouTube, { Video } from "youtube-sr";
+import { Message } from "discord.js";
+import YouTube from "youtube-sr";
 import { ServerQueue, Song } from "../interfaces";
 import ytdl = require("ytdl-core");
 
@@ -28,26 +28,11 @@ export async function play(message: Message, serverQueue: ServerQueue) {
 
     } else if (YouTube.validate(messageContent, "PLAYLIST")) {
         // Accessing API for each video in playlist
-        YouTube.getPlaylist(messageContent)
-            .then(playlist => playlist.fetch(1)) // fetch of 100 videos at one time
-            .then(playlist => {
-                // todo: ordering?
-                playlist.videos.forEach(video => {
-                    getVideo(`https://www.youtube.com/watch?v=${video.id}`, message, serverQueue);
-                });
-            }) // all parsable videos
-            .catch(console.error);
+        getPlaylistVideo(messageContent, message, serverQueue);
 
     } else if (YouTube.validate(messageContent, "PLAYLIST_ID")) {
         // Accessing API for each video in playlist with concat string
-        YouTube.getPlaylist(`https://www.youtube.com/playlist?list=${messageContent}`)
-            .then(playlist => playlist.fetch()) // fetch of 100 videos at one time
-            .then(playlist => {
-                playlist.videos.forEach(video => {
-                    getVideo(`https://www.youtube.com/watch?v=${video.id}`, message, serverQueue);
-                });
-            }) // all parsable videos
-            .catch(console.error);
+        getPlaylistVideo(`https://www.youtube.com/playlist?list=${messageContent}`, message, serverQueue);
 
     } else if (spotifyRegex.test(messageContent)) {
         // Calls spotify API
@@ -57,11 +42,67 @@ export async function play(message: Message, serverQueue: ServerQueue) {
     }
 }
 
-function playSong(guild: Guild, song: Song) {
-    const serverQueue = queue.get(guild.id);
+async function getVideo(messageContent: string, message: Message, serverQueue: ServerQueue, isPlaylist: boolean = false) {
+    await YouTube.getVideo(messageContent)
+        .then(async video => {
+            // TODO: can add more things such as who the song is added by, or thumbnail, or more
+            serverQueue.songs.push({
+                title: video.title,
+                url: `https://www.youtube.com/watch?v=${video.id}`
+            });
+
+            if (!isPlaylist)
+                return message.channel.send(`${video.title} has been added to the queue!`);
+
+            // Try to join user's VC
+            if (!serverQueue.connection) {
+                try {
+                    const connection = await message.member.voice.channel.join();
+                    serverQueue.connection = connection;
+                    playSong(message, serverQueue.songs[0], serverQueue);
+                } catch (err) {
+                    console.log(err);
+                    queue.delete(message.guild.id);
+                    return message.channel.send(err);
+                }
+            }
+        })
+        .catch(err => console.error(err));
+}
+
+async function getPlaylistVideo(link: string, message: Message, serverQueue: ServerQueue) {
+    YouTube.getPlaylist(link)
+        .then(playlist => playlist.fetch()) // fetch of 100 videos at one time
+        .then(playlist => {
+            playlist.videos.forEach(video => {
+                serverQueue.songs.push({
+                    title: video.title,
+                    url: `https://www.youtube.com/watch?v=${video.id}`
+                });
+                console.log("added");
+            });
+        }) // all parsable videos
+        .then(() => message.channel.send("All videos in the playlist have been added to the channel"))
+        .then(async () => {
+            if (!serverQueue.connection) {
+                try {
+                    const connection = await message.member.voice.channel.join();
+                    serverQueue.connection = connection;
+                    playSong(message, serverQueue.songs[0], serverQueue);
+                } catch (err) {
+                    console.log(err);
+                    queue.delete(message.guild.id);
+                    return message.channel.send(err);
+                }
+            }
+        })
+        .catch(console.error);
+}
+
+function playSong(message: Message, song: Song, serverQueue: ServerQueue) {
     if (!song) {
         serverQueue.voiceChannel.leave();
-        queue.delete(guild.id);
+        queue.delete(message.guild.id);
         return;
     }
 
@@ -69,48 +110,8 @@ function playSong(guild: Guild, song: Song) {
         .play(ytdl(song.url))
         .on("finish", () => {
             serverQueue.songs.shift();
-            playSong(guild, serverQueue.songs[0]);
-            serverQueue.textChannel.send(`Start playing: **${song.title}**`);
-        })
-        .on("error", (error: Error) => console.error(error));
+            playSong(message, serverQueue.songs[0], serverQueue);
+        });
     dispatcher.setVolumeLogarithmic(serverQueue.volume / 5);
-
-}
-
-async function getVideo(messageContent: string, message: Message, serverQueue: ServerQueue) {
-    await YouTube.getVideo(messageContent)
-        .then(async video => {
-            // TODO: can add more things such as who the song is added by, or thumbnail, or more
-            const song = {
-                title: video.title,
-                url: `https://www.youtube.com/watch?v=${video.id}`
-            };
-
-            if (!serverQueue) {
-                const queueConstruct = {
-                    textChannel: message.channel, // channel of which the user typed the message in
-                    voiceChannel: message.member.voice.channel, // voice channel which user is in while sending the message
-                    connection: null, // connection status of the bot
-                    songs: [], // list of songs
-                    volume: 2, // todo: need to figure this shit out
-                    playing: true // default
-                };
-                queue.set(message.guild.id, queueConstruct);
-                queueConstruct.songs.push(song);
-                try {
-                    const connection = await message.member.voice.channel.join();
-                    queueConstruct.connection = connection;
-                    playSong(message.guild, queueConstruct.songs[0]);
-                } catch (err) {
-                    console.log(err);
-                    queue.delete(message.guild.id);
-                    return message.channel.send(err);
-                }
-            } else {
-                serverQueue.songs.push(song);
-                // TODO: emergency patch this
-                return message.channel.send(`${song.title} has been added to the queue!`);
-            }
-        })
-        .catch(err => console.error(err));
+    serverQueue.textChannel.send(`Start playing: **${song.title}**`);
 }

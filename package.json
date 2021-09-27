@@ -1,8 +1,9 @@
 {
     "dependencies": {
         "@discordjs/opus": "^0.6.0",
-        "@typeit/discord": "^4.0.10",
+        "@discordjs/voice": "^0.6.0",
         "@types/fluent-ffmpeg": "^2.1.18",
+        "discord-player": "^5.1.0",
         "discord.js": "^13.1.0",
         "dotenv": "^10.0.0",
         "ffmpeg": "^0.0.4",

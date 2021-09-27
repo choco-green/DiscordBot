@@ -12,7 +12,6 @@ export async function play(message: Message, player: Player) {
         // Splices message to remove the ({prefix}play )
         const query = message.content.slice(6);
         const searchResult = await player.search(query, { requestedBy: message.member.user, searchEngine: QueryType.AUTO });
-        const isPlaylist = !!searchResult.playlist;
         const queue = player.createQueue(message.guild, { metadata: message.channel });
 
         if (!searchResult || !searchResult.tracks.length) return message.channel.send("No results were found!");
@@ -20,9 +19,11 @@ export async function play(message: Message, player: Player) {
         // tries to connect to user's channel
         if (!queue.connection) await queue.connect(message.member.voice.channel).catch((err) => {
             player.deleteQueue(message.guildId);
-            message.channel.send("I can join your channel for some reason, please either make sure I have the correct permission or try again later");
+            message.channel.send("I can't join your channel for some reason, please either make sure I have the correct permission or try again later");
             console.error(err);
         });
+
+        if (message.member.voice.channelId && message.member.voice.channelId !== message.guild.me.voice.channelId) return message.channel.send("You can only play songs you are in the same voice channel as the bot");
 
         // Adds all tracks in playlist / adds track and then plays it if it isn't already playing
         if (searchResult.playlist) {
@@ -54,10 +55,8 @@ export async function play(message: Message, player: Player) {
                         .setTitle(`Song Added: **${searchResult.tracks[0].title}**`)
                         .setURL(searchResult.tracks[0].url)
                         .setAuthor(searchResult.tracks[0].author, "", searchResult.tracks[0].url)
-                        .setThumbnail(searchResult.tracks[0].thumbnail)
                         .addField("Track Length", searchResult.tracks[0].duration)
                         .setImage(searchResult.tracks[0].thumbnail)
-                        .setImage("https://imgur.com/xKu5k82")
                         .setTimestamp()
                         .setFooter(`Requested by the user ${searchResult.tracks[0].requestedBy.username}`, searchResult.tracks[0].requestedBy.avatarURL())
                 ]
@@ -70,7 +69,8 @@ export async function play(message: Message, player: Player) {
     }
 }
 
-// formats the total playlist time into hours, minutes, seconds
+// Helper function
+// Formats the total playlist time into hours, minutes, seconds
 function formatTime(searchResult: { tracks: any[]; }) {
     let playlistLength = 0;
     searchResult.tracks.forEach(track => { playlistLength += track.durationMS; });

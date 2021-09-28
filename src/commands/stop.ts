@@ -1,10 +1,12 @@
+import { Player } from "discord-player";
 import { Message } from "discord.js";
-import { ServerQueue } from "../interfaces";
 
-export function stop(message: Message, serverQueue: ServerQueue) {
+export function stop(message: Message, player: Player) {
+    const queue = player.getQueue(message.guildId);
     if (!message.member.voice.channel) return message.channel.send("You have to be in a voice channel to stop the music!");
-    if (!serverQueue) return message.channel.send("There is no song that I could stop!");
+    if (message.member.voice.channelId && message.member.voice.channelId !== message.guild.me.voice.channelId) return message.channel.send("You can only stop the player when you are in the same voice channel as the bot");
+    if (!queue || !queue.playing) return message.channel.send("No music is being played");
 
-    while (serverQueue.songs.length > 0) serverQueue.songs.pop();
-    serverQueue.connection.dispatcher.end();
+    queue.destroy();
+    message.channel.send("Stopped the player");
 }

@@ -73,9 +73,7 @@ export async function play(message: Message, player: Player) {
 // Formats the total playlist time into hours, minutes, seconds
 function formatTime(tracks: Track[]) {
     let playlistLength = 0;
-    let i = 0;
-    tracks.forEach(track => { playlistLength += track.durationMS; i++ });
-    console.log(i);
+    tracks.forEach(track => { playlistLength += track.durationMS; });
     if (playlistLength < 3600) return new Date(playlistLength).toISOString().substr(14, 5);
     return new Date(playlistLength).toISOString().substr(11, 8);
 

@@ -1,4 +1,4 @@
 /build/*
 /node_modules/*
 config.ts
-package-lock.json
+.env

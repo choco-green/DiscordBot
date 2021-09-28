@@ -1,6 +1,5 @@
-import { Player, QueryType } from "discord-player";
+import { Player, QueryType, Track } from "discord-player";
 import { Message, MessageEmbed } from "discord.js";
-import { colour } from "../../config";
 
 export async function play(message: Message, player: Player) {
     try {
@@ -26,19 +25,20 @@ export async function play(message: Message, player: Player) {
         if (message.member.voice.channelId && message.member.voice.channelId !== message.guild.me.voice.channelId) return message.channel.send("You can only play songs you are in the same voice channel as the bot");
 
         // Adds all tracks in playlist / adds track and then plays it if it isn't already playing
+        // TODO: known bug: only adds returns 100 tracks
         if (searchResult.playlist) {
             queue.addTracks(searchResult.tracks);
             if (!queue.playing) await queue.play();
             return message.channel.send({
                 embeds: [
                     new MessageEmbed()
-                        .setColor(colour)
+                        .setColor("#CBC3E3")
                         .setTitle(`Playlist Added: **${searchResult.playlist.title}**`)
                         .setURL(searchResult.playlist.url)
                         .setAuthor(searchResult.playlist.author.name, "", searchResult.playlist.author.url)
                         .setDescription(searchResult.playlist.description)
                         .setThumbnail(searchResult.playlist.thumbnail)
-                        .addField("Playlist Length", formatTime(searchResult))
+                        .addField("Playlist Length", formatTime(searchResult.tracks))
                         .setImage(searchResult.tracks[0].thumbnail)
                         .setImage("https://imgur.com/xKu5k82")
                         .setTimestamp()
@@ -51,7 +51,7 @@ export async function play(message: Message, player: Player) {
             return message.channel.send({
                 embeds: [
                     new MessageEmbed()
-                        .setColor(colour)
+                        .setColor("#CBC3E3")
                         .setTitle(`Song Added: **${searchResult.tracks[0].title}**`)
                         .setURL(searchResult.tracks[0].url)
                         .setAuthor(searchResult.tracks[0].author, "", searchResult.tracks[0].url)
@@ -71,17 +71,10 @@ export async function play(message: Message, player: Player) {
 
 // Helper function
 // Formats the total playlist time into hours, minutes, seconds
-function formatTime(searchResult: { tracks: any[]; }) {
+function formatTime(tracks: Track[]) {
     let playlistLength = 0;
-    searchResult.tracks.forEach(track => { playlistLength += track.durationMS; });
+    tracks.forEach(track => { playlistLength += track.durationMS; });
+    if (playlistLength < 3600) return new Date(playlistLength).toISOString().substr(14, 5);
+    return new Date(playlistLength).toISOString().substr(11, 8);
 
-    const d = Math.round(playlistLength / 1000);
-    const h = Math.floor(d / 3600);
-    const m = Math.floor(d % 3600 / 60);
-    const s = Math.floor(d % 3600 % 60);
-
-    const hDisplay = h > 0 ? h + ":" : "";
-    const mDisplay = m > 0 ? m + ":" : "";
-    const sDisplay = s;
-    return hDisplay + mDisplay + sDisplay;
 }

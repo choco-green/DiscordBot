@@ -26,6 +26,7 @@ export async function play(message: Message, player: Player) {
 
         // Adds all tracks in playlist / adds track and then plays it if it isn't already playing
         // TODO: known bug: only adds returns 100 tracks
+        // TODO: add payment system for returning more than 100 tracks (proper connect to spotify API)
         if (searchResult.playlist) {
             queue.addTracks(searchResult.tracks);
             if (!queue.playing) await queue.play();

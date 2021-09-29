@@ -10,4 +10,6 @@ export function skip(message: Message, player: Player) {
     if (!queue.playing) return message.channel.send("I can't skip any song if I'm not even playing them");
 
     message.channel.send(queue.skip() ? `Skipped **${oldTrack}**` : `Something went wrong, track not skipped`);
+
+    // todo: display now playing when songs skipped
 }

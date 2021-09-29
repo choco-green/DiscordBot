@@ -14,6 +14,7 @@ const client = new Client({
 const player = new Player(client);
 
 client.once("ready", () => {
+    // tslint:disable-next-line: no-console
     console.log("Ready!");
     client.user.setActivity("ur mum (lol)", { type: 'WATCHING' });
 });

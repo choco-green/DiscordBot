@@ -19,7 +19,7 @@ export async function play(message: Message, player: Player) {
         if (!queue.connection) await queue.connect(message.member.voice.channel).catch((err) => {
             player.deleteQueue(message.guildId);
             message.channel.send("I can't join your channel for some reason, please either make sure I have the correct permission or try again later");
-            console.error(err);
+            message.channel.send(`Here is the error "***${err.message}***"`);
         });
 
         if (message.member.voice.channelId && message.member.voice.channelId !== message.guild.me.voice.channelId) return message.channel.send("You can only play songs you are in the same voice channel as the bot");
@@ -64,7 +64,6 @@ export async function play(message: Message, player: Player) {
             });
         }
     } catch (err) {
-        console.error(err);
         message.channel.send("Something is wrong with this track/playlist, please try to play something else");
         message.channel.send(`Here is the error "***${err.message}***"`);
     }

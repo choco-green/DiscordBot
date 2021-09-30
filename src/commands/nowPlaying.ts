@@ -8,6 +8,7 @@ export function nowPlaying(message: Message, player: Player) {
     const progress = queue.createProgressBar();
     const perc = queue.getPlayerTimestamp();
 
+    // TODO: wrong returns, need to fix
     return message.channel.send({
         embeds: [
             new MessageEmbed()

@@ -1,6 +1,6 @@
 import { Player } from "discord-player";
 import { Client } from "discord.js";
-import { play, queue, skip, stop, nowPlaying, shuffle } from "./Commands/commands";
+import { play, queue, skip, stop, nowPlaying, shuffle, help } from "./Commands/commands";
 import * as dotenv from "dotenv";
 import { stateCheckingForBot } from "./Utils/stateChecking";
 import { MongoClient } from 'mongodb';
@@ -57,7 +57,9 @@ client.on("messageCreate", message => {
         case msgContent.startsWith(`${prefix}nowplaying`):
         case msgContent.startsWith(`${prefix}np`):
             nowPlaying(message, player);
-
+        case msgContent.startsWith(`${prefix}help`):
+            help(message);
+            break;
         default:
             message.channel.send("You need to enter a valid command!");
             break;

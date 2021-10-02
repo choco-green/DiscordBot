@@ -2,7 +2,7 @@ import { Player, Queue } from "discord-player";
 import { EmbedFieldData, Message, MessageActionRow, MessageButton, MessageEmbed } from "discord.js";
 
 export async function queue(message: Message, player: Player) {
-    const thisIndex = new Index();
+    const thisIndex = new index();
     thisIndex.index = 0;
     const serverQueue = player.getQueue(message.guildId);
     if (!serverQueue || !serverQueue.playing) return message.channel.send("No music is being played");
@@ -24,6 +24,8 @@ export async function queue(message: Message, player: Player) {
                 .setStyle("PRIMARY"));
 
     message.channel.send({ embeds: [pages[thisIndex.index]], components: [testButton] });
+
+    // todo: disable next page button if there isn't anymore songs left to show
     collector.on("collect", async i => {
         if (i.customId === "prev") {
             thisIndex.index = thisIndex.index - 1;
@@ -64,13 +66,13 @@ function createEmbeddedMessage(name: string, value: string, message: Message, pl
     return new MessageEmbed()
         .setColor("#CBC3E3")
         .setTitle("Current Queue")
-        .setDescription(`Now playing: ${player.getQueue(message.guild).nowPlaying()}`)
+        .setDescription(`Now playing: **${player.getQueue(message.guild).nowPlaying()}**`)
         .addField(name, value)
         .setTimestamp()
         .setFooter(`Requested by ${message.author.username}`, message.author.avatarURL());
 }
 
-function Index() {
+function index() {
     let index = null;
     Object.defineProperty(this, "index", {
         get() { return index; },

@@ -1,9 +1,8 @@
 import { Player } from "discord-player";
 import { Client } from "discord.js";
-import { play, queue, skip, stop, nowPlaying, shuffle, help } from "./Commands/commands";
 import * as dotenv from "dotenv";
+import { help, nowPlaying, play, queue, shuffle, skip, stop } from "./Commands";
 import { stateCheckingForBot } from "./Utils/stateChecking";
-import { MongoClient } from 'mongodb';
 dotenv.config();
 
 // const mongoClient = new MongoClient(process.env.URI);

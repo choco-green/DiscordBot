@@ -55,6 +55,7 @@ client.on("messageCreate", message => {
         case msgContent.startsWith(`${prefix}nowplaying`):
         case msgContent.startsWith(`${prefix}np`):
             nowPlaying(message, player);
+            break;
         case msgContent.startsWith(`${prefix}help`):
             help(message);
             break;

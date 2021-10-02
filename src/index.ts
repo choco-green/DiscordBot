@@ -34,7 +34,6 @@ client.on("messageCreate", message => {
     if (!message.content.startsWith(prefix)) return;
 
     // todo: connect to a database
-    // todo: add shorthand commands
     switch (true) {
         case msgContent.startsWith(`${prefix}play`):
         case msgContent.startsWith(`${prefix}p`):

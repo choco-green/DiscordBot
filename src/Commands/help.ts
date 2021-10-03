@@ -37,7 +37,7 @@ export function help(message: Message) {
 				.setImage("https://imgur.com/xKu5k82")
 				.setTimestamp()
 				.setFooter(
-					`Requested by the user ${message.author.username}`,
+					`This message was requested by ${message.author.username}`,
 					message.author.avatarURL() as string
 				)
 		]

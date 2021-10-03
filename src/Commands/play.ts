@@ -41,7 +41,6 @@ export async function play(message: Message, player: Player) {
 				message.channel.send(`Here is the error "***${err.message}***"`);
 			});
 
-		// todo: Disconnects the bot after statechecking
 		if (
 			message.member.voice.channelId &&
 			message.member.voice.channelId !== message.guild.me.voice.channelId
@@ -74,8 +73,8 @@ export async function play(message: Message, player: Player) {
 						.setImage("https://imgur.com/xKu5k82")
 						.setTimestamp()
 						.setFooter(
-							`Requested by the user ${searchResult.tracks[0].requestedBy.username}`,
-							searchResult.tracks[0].requestedBy.avatarURL() as string
+							`This message was requested by ${message.author.username}`,
+							message.author.avatarURL() as string
 						)
 				]
 			});
@@ -93,8 +92,8 @@ export async function play(message: Message, player: Player) {
 						.setImage(searchResult.tracks[0].thumbnail)
 						.setTimestamp()
 						.setFooter(
-							`Requested by the user ${searchResult.tracks[0].requestedBy.username}`,
-							searchResult.tracks[0].requestedBy.avatarURL() as string
+							`This message was requested by ${message.author.username}`,
+							message.author.avatarURL() as string
 						)
 				]
 			});

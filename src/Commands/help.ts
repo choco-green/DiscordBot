@@ -38,7 +38,7 @@ export function help(message: Message) {
 				.setTimestamp()
 				.setFooter(
 					`Requested by the user ${message.author.username}`,
-					message.author.avatarURL()
+					message.author.avatarURL() as string
 				)
 		]
 	});

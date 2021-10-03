@@ -1,8 +1,8 @@
 import { Player } from "discord-player";
-import { Message, MessageEmbed } from "discord.js";
+import { Guild, Message, MessageEmbed } from "discord.js";
 
 export function nowPlaying(message: Message, player: Player) {
-	const queue = player.getQueue(message.guildId);
+	const queue = player.getQueue(message.guild as Guild);
 	if (!queue || !queue.playing)
 		return message.channel.send("There is no song playing currently!");
 

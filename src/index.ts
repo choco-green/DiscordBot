@@ -23,13 +23,14 @@ const player = new Player(client, { ytdlOptions: { quality: "highestaudio" } });
 // Called when the bot is first initialised
 client.once("ready", () => {
 	console.log("bot ready");
+	if (!client.user) return;
 	client.user.setActivity("commands|$help", { type: "LISTENING" });
 });
 
 // Called when a new message is sent in any channel in any guild
 client.on("messageCreate", (message) => {
 	const msgContent = message.content.toLowerCase();
-	const prefix = process.env.PREFIX;
+	const prefix = process.env.PREFIX || "$";
 
 	if (message.author.bot) return;
 	if (!message.content.startsWith(prefix)) return;

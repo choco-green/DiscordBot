@@ -1,12 +1,24 @@
 import { Player, Queue } from "discord-player";
-import { Message, MessageActionRow, MessageButton, MessageEmbed } from "discord.js";
+import { Guild, Message, MessageActionRow, MessageButton, MessageEmbed } from "discord.js";
 import { formatTime } from "../Utils/formatTime";
 
 export async function queue(message: Message, player: Player) {
-	if (!player.getQueue(message.guildId) || !player.getQueue(message.guildId).playing)
+	if (
+		!player.getQueue(message.guild as Guild) ||
+		!player.getQueue(message.guild as Guild).playing
+	)
 		return message.channel.send("No music is being played");
 
-	const Index = new index(); // Index for pagination
+	let index = {
+		index: 0,
+		get get(): number {
+			return this.index;
+		},
+		set set(value: number) {
+			this.index = value;
+		}
+	};
+
 	const amountInPage = 10; // Amount of songs displayed on one page
 	const pages: MessageEmbed[] = createPages(amountInPage, message, player); // The list of pages that will be displayed
 	const collector = message.channel.createMessageComponentCollector({ time: 60000 }); // Collector for user interation
@@ -14,25 +26,25 @@ export async function queue(message: Message, player: Player) {
 	// Handling User's interation with the button in Queue
 	collector.on("collect", async (i) => {
 		if (i.customId === "prev") {
-			Index.index = Index.index-- < 0 ? 0 : Index.index--;
+			index.set = index.get - 1 < 0 ? 0 : index.get - 1;
 			await i.update({
-				embeds: [pages[Index.index]],
-				components: [buttons(Index.index, pages)]
+				embeds: [pages[index.get]],
+				components: [buttons(index.get, pages)]
 			});
 		}
 		if (i.customId === "next") {
-			Index.index = Index.index++ > pages.length - 1 ? pages.length - 1 : Index.index++;
+			index.set = index.get + 1 > pages.length - 1 ? pages.length - 1 : index.get + 1;
 			await i.update({
-				embeds: [pages[Index.index]],
-				components: [buttons(Index.index, pages)]
+				embeds: [pages[index.get]],
+				components: [buttons(index.get, pages)]
 			});
 		}
 	});
 
 	// Initial message sent to user
 	message.channel.send({
-		embeds: [pages[Index.index]],
-		components: [buttons(Index.index, pages)]
+		embeds: [pages[index.get]],
+		components: [buttons(index.get, pages)]
 	});
 }
 
@@ -44,7 +56,7 @@ enum ValueType {
 
 // Creates embedded messages based on values from "getValue"
 function createPages(pageCount: number, message: Message, player: Player) {
-	const serverQueue = player.getQueue(message.guild);
+	const serverQueue = player.getQueue(message.guild as Guild);
 	const titleValue = getValue(serverQueue, pageCount, ValueType.Title);
 	const lengthValue = getValue(serverQueue, pageCount, ValueType.Length);
 	const requestedByValue = getValue(serverQueue, pageCount, ValueType.RequestedBy);
@@ -94,7 +106,7 @@ function getValue(serverQueue: Queue, pageCount: number, valueType: ValueType) {
 
 // Creates embedded messages based on each indivisual page
 function createEmbeddedMessage(value: string[], message: Message, player: Player) {
-	const serverQueue = player.getQueue(message.guild);
+	const serverQueue = player.getQueue(message.guild as Guild);
 	const nowPlaying = serverQueue.nowPlaying();
 
 	return new MessageEmbed()
@@ -112,21 +124,8 @@ function createEmbeddedMessage(value: string[], message: Message, player: Player
 		.setTimestamp()
 		.setFooter(
 			`This message was requested by ${message.author.username}`,
-			message.author.avatarURL()
+			message.author.avatarURL() as string
 		);
-}
-
-// Indexing for the pages
-function index() {
-	let index = 0;
-	Object.defineProperty(this, "index", {
-		get() {
-			return index;
-		},
-		set(value) {
-			index = value;
-		}
-	});
 }
 
 // A function that figures out whether or not the buttons should be enabled or disabled for each page

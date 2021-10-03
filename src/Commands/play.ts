@@ -8,25 +8,26 @@ export async function play(message: Message, player: Player) {
         if (!message.member.voice.channel.permissionsFor(message.client.user).has("CONNECT")) return message.channel.send("I need the permission to be able to join your voice channel!");
         if (!message.member.voice.channel.permissionsFor(message.client.user).has("SPEAK")) return message.channel.send("I need the permission for speaking in your voice channel!");
 
+
         // Splices message to remove the ({prefix}play )
         const query = message.content.slice(6);
         const searchResult = await player.search(query, { requestedBy: message.member.user, searchEngine: QueryType.AUTO });
-        const queue = player.createQueue(message.guild, { metadata: message.channel });
-
         if (!searchResult || !searchResult.tracks.length) return message.channel.send("No results were found!");
 
         // tries to connect to user's channel
+        const queue = player.createQueue(message.guild, { metadata: message.channel });
         if (!queue.connection) await queue.connect(message.member.voice.channel).catch((err) => {
             player.deleteQueue(message.guildId);
             message.channel.send("I can't join your channel for some reason, please either make sure I have the correct permission or try again later");
             message.channel.send(`Here is the error "***${err.message}***"`);
         });
 
+        // todo: Disconnects the bot after statechecking
         if (message.member.voice.channelId && message.member.voice.channelId !== message.guild.me.voice.channelId) return message.channel.send("You can only play songs you are in the same voice channel as the bot");
 
         // Adds all tracks in playlist / adds track and then plays it if it isn't already playing
-        // TODO: known bug: only adds returns 100 tracks
-        // TODO: add payment system for returning more than 100 tracks (proper connect to spotify API)
+        // todo: known bug: only adds returns 100 tracks
+        // todo: add payment system for returning more than 100 tracks (proper connect to spotify API)
         if (searchResult.playlist) {
             queue.addTracks(searchResult.tracks);
             if (!queue.playing) await queue.play();
@@ -69,7 +70,6 @@ export async function play(message: Message, player: Player) {
     }
 }
 
-// Helper function
 // Formats the total playlist time into hours, minutes, seconds
 function formatTime(tracks: Track[]) {
     let playlistLength = 0; // in miliseconds

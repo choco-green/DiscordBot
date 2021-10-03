@@ -2,45 +2,32 @@ import { Player, Queue } from "discord-player";
 import { EmbedFieldData, Message, MessageActionRow, MessageButton, MessageEmbed } from "discord.js";
 
 export async function queue(message: Message, player: Player) {
-    const thisIndex = new index();
-    thisIndex.index = 0;
     const serverQueue = player.getQueue(message.guildId);
     if (!serverQueue || !serverQueue.playing) return message.channel.send("No music is being played");
 
-    // * Config Variable
-    const amountInPage = 15;
-    const pages: MessageEmbed[] = createPages(serverQueue, amountInPage, message, player);
-    const collector = message.channel.createMessageComponentCollector({ time: 60000 });
+    const Index = new index(); // Index for pagination
+    const amountInPage = 15; // Amount of songs displayed on one page
+    const pages: MessageEmbed[] = createPages(serverQueue, amountInPage, message, player); // The list of pages that will be displayed
+    const collector = message.channel.createMessageComponentCollector({ time: 60000 }); // Collector for user interation
 
-    const testButton = new MessageActionRow()
-        .addComponents(
-            new MessageButton()
-                .setCustomId("prev")
-                .setLabel("Prev Page")
-                .setStyle("PRIMARY"),
-            new MessageButton()
-                .setCustomId("next")
-                .setLabel("Next Page")
-                .setStyle("PRIMARY"));
-
-    message.channel.send({ embeds: [pages[thisIndex.index]], components: [testButton] });
-
-    // todo: disable next page button if there isn't anymore songs left to show
+    // Handling User's interation with the button in Queue
     collector.on("collect", async i => {
         if (i.customId === "prev") {
-            thisIndex.index = thisIndex.index - 1;
-            if (thisIndex.index < 0) thisIndex.index = pages.length - 1;
-            await i.update({ embeds: [pages[thisIndex.index]], });
+            Index.index = (Index.index-- < 0) ? 0 : Index.index--;
+            await i.update({ embeds: [pages[Index.index]], components: [buttons(Index.index, pages)] });
         }
         if (i.customId === "next") {
-            thisIndex.index = thisIndex.index + 1;
-            if (thisIndex.index >= pages.length) thisIndex.index = 0;
-            await i.update({ embeds: [pages[thisIndex.index]], });
+            Index.index = (Index.index++ > pages.length - 1) ? pages.length - 1 : Index.index++;
+            await i.update({ embeds: [pages[Index.index]], components: [buttons(Index.index, pages)] });
         }
     });
+
+    // Initial message sent to user
+    message.channel.send({ embeds: [pages[Index.index]], components: [buttons(Index.index, pages)] });
 }
 
-
+// A function that gets "amountInPage" amount of titles of the track and concat them into a single string
+// This is used in the function "createPages" to make pages
 function getValue(pageCount: number, serverQueue: Queue) {
     const values: string[] = [];
     let value = "";
@@ -51,6 +38,7 @@ function getValue(pageCount: number, serverQueue: Queue) {
     return values;
 }
 
+// Receives values from "getValue" and creates embedded messages which is then put into a page array
 function createPages(serverQueue: Queue, pageCount: number, message: Message, player: Player) {
     const pages: MessageEmbed[] = [];
     const Values = getValue(pageCount, serverQueue);
@@ -62,6 +50,7 @@ function createPages(serverQueue: Queue, pageCount: number, message: Message, pl
     return pages;
 }
 
+// Creates embedded messages based on each indivisual page
 function createEmbeddedMessage(name: string, value: string, message: Message, player: Player) {
     return new MessageEmbed()
         .setColor("#CBC3E3")
@@ -72,10 +61,25 @@ function createEmbeddedMessage(name: string, value: string, message: Message, pl
         .setFooter(`Requested by ${message.author.username}`, message.author.avatarURL());
 }
 
+// Indexing for the pages
 function index() {
-    let index = null;
+    let index = 0;
     Object.defineProperty(this, "index", {
         get() { return index; },
         set(value) { index = value; }
     });
+}
+
+// A function that figures out whether or not the buttons should be enabled or disabled for each page
+function buttons(index: number, pages: MessageEmbed[]) {
+    // Types of buttons
+    const prevButton = new MessageButton().setCustomId("prev").setLabel("Prev Page").setStyle("PRIMARY");
+    const nextButton = new MessageButton().setCustomId("next").setLabel("Next Page").setStyle("PRIMARY");
+    const prevButtonDisabled = new MessageButton().setCustomId("prev").setLabel("Prev Page").setStyle("PRIMARY").setDisabled();
+    const nextButtonDisabled = new MessageButton().setCustomId("next").setLabel("Next Page").setStyle("PRIMARY").setDisabled();
+
+    let button: MessageButton[] = [];
+    button[0] = (index == 0) ? prevButtonDisabled : prevButton;
+    button[1] = (index == pages.length - 1) ? nextButtonDisabled : nextButton;
+    return new MessageActionRow().addComponents(button);
 }

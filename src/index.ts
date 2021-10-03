@@ -1,5 +1,5 @@
 import { Player } from "discord-player";
-import { Client } from "discord.js";
+import { Client, Message } from "discord.js";
 import * as dotenv from "dotenv";
 import { help, nowPlaying, play, queue, shuffle, skip, stop } from "./Commands";
 import { stateCheckingForBot } from "./Utils/stateChecking";
@@ -12,20 +12,24 @@ dotenv.config();
 //     mongoClient.close();
 // });
 
-// ! Discord event cheat sheet here: https://gist.github.com/koad/316b265a91d933fd1b62dddfcc3ff584
-
-// ! Important, new song skips queue sometimes? unstable
-
+// Discord Client
 const client = new Client({
     intents: ["GUILDS", "GUILD_MESSAGES", "GUILD_VOICE_STATES"]
 });
 
-const player = new Player(client);
+// Discord-Player Client
+const player = new Player(client, {
+    ytdlOptions: {
+        quality: "highestaudio"
+    }
+});
 
+// Called when the bot is first initialised
 client.once("ready", () => {
     client.user.setActivity("commands <3", { type: 'LISTENING' });
 });
 
+// Called when a new message is sent in any channel in any guild
 client.on("messageCreate", message => {
     const msgContent = message.content.toLowerCase();
     const prefix = process.env.PREFIX;
@@ -35,7 +39,10 @@ client.on("messageCreate", message => {
     // todo: connect to a database
     switch (true) {
         case msgContent.startsWith(`${prefix}play`):
+            play(message, player);
+            break;
         case msgContent.startsWith(`${prefix}p`):
+            message.content = [message.content.slice(0, 2), "lay", message.content.slice(2)].join('');
             play(message, player);
             break;
         case msgContent.startsWith(`${prefix}shuffle`):
@@ -65,8 +72,15 @@ client.on("messageCreate", message => {
     }
 });
 
+// Making the bot leave if there aren't any other user in the same channel as the bot
 client.on("voiceStateUpdate", (oldMember, newMember) => {
     stateCheckingForBot(newMember, player);
 });
 
+// Error handling for the discord-player
+player.on("error", (q, error) => {
+    console.error(error);
+});
+
+// Logs in <3
 client.login(process.env.TOKEN);

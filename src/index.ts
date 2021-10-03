@@ -5,6 +5,9 @@ import { help, nowPlaying, play, queue, shuffle, skip, stop } from "./Commands";
 import { stateCheckingForBot } from "./Utils/stateChecking";
 dotenv.config();
 
+// ! Proxies may be needed for the bot, some videos are not availble
+// ! example: https://www.youtube.com/watch?v=d1Nq82S7_0Q
+
 // const mongoClient = new MongoClient(process.env.URI);
 // mongoClient.connect(async err => {
 //     const collection = mongoClient.db("testing").collection("main");
@@ -18,7 +21,9 @@ const client = new Client({
 });
 
 // Discord-Player Client
-const player = new Player(client, { ytdlOptions: { quality: "highestaudio" } });
+const player = new Player(client, {
+	ytdlOptions: { quality: "highestaudio", highWaterMark: 1024 * 1024 * 32 }
+});
 
 // Called when the bot is first initialised
 client.once("ready", () => {
